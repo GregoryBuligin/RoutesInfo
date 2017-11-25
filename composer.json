@@ -1,0 +1,18 @@
+{
+    "name": "gregory/test",
+    "authors": [
+        {
+            "name": "Gregory",
+            "email": "gri9996@yandex.ru"
+        }
+    ],
+    "require": {
+        "justinrainbow/json-schema": "^5.2",
+        "predis/predis": "^1.1",
+        "hoa/console": "^3.17"
+    },
+    "autoload": {
+        "psr-4": {"RoutesInfo\\": "src/"},
+        "classmap": [ "src/" ]
+    }
+}
