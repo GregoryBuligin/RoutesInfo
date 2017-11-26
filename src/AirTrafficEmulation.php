@@ -39,6 +39,10 @@ use Predis\Client;
  * echo $air_traffic_emul->partTimeArrival("FV777", 0) . PHP_EOL;
  * print_r($air_traffic_emul->inAir($date)) . PHP_EOL;
  *
+ * Static method call.
+ * $point1 = [33, 33]; // [lat, long]
+ * $point2 = [37, 24]; // [lat, long]
+ * echo AirTrafficEmulation::distanceCalculation($point1, $point2) . PHP_EOL;
  *
  * @package  RoutesInfo
  * @access   public
@@ -49,6 +53,31 @@ class AirTrafficEmulation
     const EARTH_RADIUS = 6372.795;
     /** @const DATE_TIME_FORMAT datatime format for print */
     const DATE_TIME_FORMAT = 'Y-m-j H:i';
+
+    /**
+     * Calculation of the distance from the coordinates of two points.
+     *
+     * @static
+     * @access public
+     *
+     * @param array $point1
+     * @param array $point2
+     *
+     * @return float
+     */
+    public static function distanceCalculation($point1, $point2)
+    {
+        $lat1 = $point1[0] * M_PI / 180; // To radians
+        $long1 = $point1[1] * M_PI / 180;
+
+        $lat2 = $point2[0] * M_PI / 180;
+        $long2 = $point2[1] * M_PI / 180;
+
+        $distance = acos(sin($lat1) * sin($lat2) +
+                         cos($lat1) * cos($lat2) *
+                         cos($long1 - $long2)) * self::EARTH_RADIUS;
+        return round($distance, 2);
+    }
 
 
     /** @var Predis\Client used to connect to redis */
@@ -204,21 +233,22 @@ class AirTrafficEmulation
 
         for ($i = 0; $i < count($tr)-1; $i++) {
             // Coordinates of the first point
-            $lat1 = $tr[$i][0] * M_PI / 180; // To radians
-            $long1 = $tr[$i][1] * M_PI / 180;
+            $lat1 = $tr[$i][0];
+            $long1 = $tr[$i][1];
 
             // Coordinates of the second point
-            $lat2 = $tr[$i+1][0] * M_PI / 180;
-            $long2 = $tr[$i+1][1] * M_PI / 180;
+            $lat2 = $tr[$i+1][0];
+            $long2 = $tr[$i+1][1];
 
-            $distance = acos(sin($lat1) * sin($lat2) +
-                             cos($lat1) * cos($lat2) *
-                             cos($long1 - $long2)) * self::EARTH_RADIUS;
+            $point1 = [$lat1, $long1];
+            $point2 = [$lat2, $long2];
+
+            $distance = self::distanceCalculation($point1, $point2);
 
             $total_distance += $distance;
         }
 
-        return round($total_distance, 2);
+        return $total_distance;
     }
 
     /**
@@ -237,19 +267,20 @@ class AirTrafficEmulation
     {
         $tr = $this->check($number, $n);
         // Coordinates of the first point
-        $lat1 = $tr[$n-1][0] * M_PI / 180; // To radians
-        $long1 = $tr[$n-1][1] * M_PI / 180;
+        $lat1 = $tr[$n-1][0];
+        $long1 = $tr[$n-1][1];
 
         // Coordinates of the second point
-        $lat2 = $tr[$n][0] * M_PI / 180;
-        $long2 = $tr[$n][1] * M_PI / 180;
+        $lat2 = $tr[$n][0];
+        $long2 = $tr[$n][1];
+
+        $point1 = [$lat1, $long1];
+        $point2 = [$lat2, $long2];
 
         // Distance calculation
-        $distance = acos(sin($lat1) * sin($lat2) +
-                         cos($lat1) * cos($lat2) *
-                         cos($long1 - $long2)) * self::EARTH_RADIUS;
+        $distance = self::distanceCalculation($point1, $point2);
 
-        return round($distance, 2);
+        return $distance;
     }
 
     /**
@@ -272,9 +303,9 @@ class AirTrafficEmulation
                                                       $date_time);
         $flight_speed = (int)$data["speed"];
 
-        $preparation_data = array('departure_time' => $departure_time,
-                                  'flight_speed'   => $flight_speed
-        );
+        $preparation_data = ['departure_time' => $departure_time,
+                             'flight_speed'   => $flight_speed
+        ];
 
         return $preparation_data;
     }
