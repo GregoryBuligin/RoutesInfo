@@ -13,7 +13,6 @@
         "phpunit/phpunit": "^6.4"
     },
     "autoload": {
-        "psr-4": {"RoutesInfo\\": "src/"},
-        "classmap": [ "src/" ]
+        "psr-4": {"RoutesInfo\\": "src/"}
     }
 }

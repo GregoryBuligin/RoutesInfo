@@ -3,12 +3,13 @@
 require_once "vendor/autoload.php";
 
 use RoutesInfo\Distance\AirTrafficEmulation;
+use Predis\Connection\ConnectionException;
 use Hoa\Console\Parser;
 
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
 $help_msg = <<<'HELP'
-Usage: AirTrafficEmulation-cli [OPTIONS] [args...]
+Usage: AirTrafficEmulation-cli [OPTIONS] [ARGS...]
   -c <host:port>            Redis server hostname:port connection
                             (default: 127.0.0.1:6379).
   -j <json>                 Input data from file (default: null).
@@ -34,6 +35,23 @@ Usage: AirTrafficEmulation-cli [OPTIONS] [args...]
 
 HELP;
 
+$help_shell_msg = <<<'HELP'
+
+Commands available from the prompt:
+
+  connection (or c) <host> <port>  to Redis server hostname:port connection
+                                   (default: 127.0.0.1:6379).
+  json (or j) <path to .json file> to input data from file (default: null).
+  distance (or d) <flight>         to calculate the total distance in km of the route.
+  time-arrival (or t) <flight>     to calculate the estimated time of arrival for the flight.
+  part-time-arrival (or p) <flight> <section> to calculates arrival time at the waypoint.
+  in-air (or i) [<date> <time>]    to gives a list of current aircraft that are already in flight,
+                                   but have not yet reached the final point.
+  help (or h)                      to output this help.
+
+HELP;
+
+
 $print_help = false;
 // definition of default values
 $host = '127.0.0.1';
@@ -52,10 +70,26 @@ if (!isset($argv[1])) {
             print "End interactive session..." . PHP_EOL;
             $session = false;
         }
-        $line = explode(' ', $line);
+        $line = explode(' ', trim($line));
 
         try {
-            if ($line[0] == 'distance' ||  $line[0] == 'd') {
+            if ($line[0] == 'connection' ||  $line[0] == 'c') {
+                if (isset($line[1]) && isset($line[2])) {
+                    $host = $line[1];
+                    $port = $line[2];
+                }
+
+                $air_traffic_emul->redisConnect($host, $port);
+                print $host . ' ' . $port . PHP_EOL;
+            }
+            if ($line[0] == 'json' ||  $line[0] == 'j') {
+                $json_path = $line[1];
+                $json = file_get_contents($json_path);
+                $air_traffic_emul->jsonParseAndAdd($json);
+                print "JSON loads from file " . $json_path . ':'. PHP_EOL .
+                                                                  $json;
+            }
+            else if ($line[0] == 'distance' ||  $line[0] == 'd') {
                 $flight = $line[1];
                 print $air_traffic_emul->distance(strtoupper($flight)) .
                     'km' . PHP_EOL;
@@ -90,38 +124,48 @@ if (!isset($argv[1])) {
                 }
             }
             else if ($line[0] == 'help' || $line[0] == 'h') {
-                print $help_msg . PHP_EOL;
+                print $help_shell_msg . PHP_EOL;
             }
         } catch(\BadMethodCallException $e) {
             print "Unrecognized option or bad number of args: " .
                 $e->getMessage() . PHP_EOL;
+            continue;
+        } catch(Predis\Connection\ConnectionException $e) {
+            print 'Incorrect post-hort pair, please type "connection" (or "c")'.
+                    ' to set correct post-hort pair' .
+                    PHP_EOL . 'default host is 127.0.0.1, port is 6379' .
+                    PHP_EOL;
+            continue;
         }
     }
 }
 else {
     unset($argv[0]);
     $command = implode(' ', $argv);
-    $parser = new Parser();
-    $parser->parse($command);
-
-    // Options definition
-    $options = new Hoa\Console\GetOption(
-        [
-            ['connection',        Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'c'],
-            ['json',              Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'j'],
-            ['distance',          Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'd'],
-            ['time-arrival',      Hoa\Console\GetOption::REQUIRED_ARGUMENT, 't'],
-            ['part-time-arrival', Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'p'],
-            ['in-air',            Hoa\Console\GetOption::OPTIONAL_ARGUMENT, 'i'],
-            ['help',              Hoa\Console\GetOption::NO_ARGUMENT,       'h']
-        ],
-        $parser
-    );
-
-
-    $names = $parser->getInputs();
 
     try {
+
+        $parser = new Parser();
+        $parser->parse($command);
+
+        // Options definition
+        $options = new Hoa\Console\GetOption(
+            [
+                ['connection',        Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'c'],
+                ['json',              Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'j'],
+                ['distance',          Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'd'],
+                ['time-arrival',      Hoa\Console\GetOption::REQUIRED_ARGUMENT, 't'],
+                ['part-time-arrival', Hoa\Console\GetOption::REQUIRED_ARGUMENT, 'p'],
+                ['in-air',            Hoa\Console\GetOption::OPTIONAL_ARGUMENT, 'i'],
+                ['help',              Hoa\Console\GetOption::NO_ARGUMENT,       'h']
+            ],
+            $parser
+        );
+
+        $names = $parser->getInputs();
+
+        $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
+
         // The following while with the switch will assign the values to the variables.
         while (false !== $shortName = $options->getOption($value)) {
             switch ($shortName) {
@@ -129,29 +173,27 @@ else {
                     $conn_info = explode(':', $value);
                     $host = $conn_info[0];
                     $port = $conn_info[1];
-                    $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
+                    $air_traffic_emul->redisConnect($host, $port);
                     break;
                 case 'j':
-                    $json = $value;
+                    $json_path = $value;
+                    $json = file_get_contents($json_path);
+                    $air_traffic_emul->jsonParseAndAdd($json);
                     break;
                 case 'd':
-                    $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
                     $flight = $value;
                     print $air_traffic_emul->distance(strtoupper($flight)) . PHP_EOL;
                     break;
                 case 't':
-                    $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
                     $flight = $value;
                     print $air_traffic_emul->timeArrival(strtoupper($flight)).PHP_EOL;
                     break;
                 case 'p':
-                    $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
                     $flight_info = explode(':', $value);
                     print $air_traffic_emul->partTimeArrival(strtoupper($flight_info[0]),
                                                              $flight_info[1]).PHP_EOL;
                     break;
                 case 'i':
-                    $air_traffic_emul = new AirTrafficEmulation($json, $host, $port);
                     if ($value != 1) {
                         $date_info = $value;
                         $date_info = explode('/', $value);
@@ -178,7 +220,7 @@ else {
         if ($print_help) {
             print $help_msg . PHP_EOL;
         }
-    } catch (\BadMethodCallException $e) {
+    } catch (\BadMethodCallException | Hoa\Exception $e) {
         print "Unrecognized option or bad number of args" . PHP_EOL;
     }
 }

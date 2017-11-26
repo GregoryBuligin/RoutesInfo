@@ -68,13 +68,14 @@ class AirTrafficEmulation
      *
      * @access public
      *
-     * @param string|null  $routes_json
-     * @param string       $host
-     * @param integer      $port
+     * @param string|array|null  $routes_json
+     * @param string             $host
+     * @param integer            $port
      *
      * @uses AirTrafficEmulation::redisConnect() to initialize redis storage
      * @uses JsonSchema\Validator to validate user-added data
      * @uses AirTrafficEmulation::$client to set data in storage
+     * @uses AirTrafficEmulation::jsonParseAndAdd() to parse and add fligth
      *
      * @throws \BadMethodCallException if $routes_json could not be decoded
      * @throws Predis\Connection\ConnectionException
@@ -121,6 +122,44 @@ class AirTrafficEmulation
             ]
         ];
 
+        $this->jsonParseAndAdd($routes_json);
+    }
+
+    /**
+     * Initialize redis storage.
+     *
+     * @access public
+     *
+     * @param string  $host
+     * @param integer $port
+     *
+     * @uses Predis\Client to connect to redis
+     *
+     * @throws Predis\Connection\ConnectionException
+     * if the database is not connected
+     *
+     * @return void
+     */
+    public function redisConnect($host, $port)
+    {
+        $this->client = new Client([
+            'scheme' => 'tcp',
+            'host'   => $host,
+            'port'   => $port,
+        ]);
+    }
+
+    /**
+     * Parsing json string and add it to storage.
+     *
+     * @access public
+     *
+     * @param string|array|null $json
+     *
+     * @return void
+     */
+    public function jsonParseAndAdd($routes_json)
+    {
         if (!is_null($routes_json)) {
             if (!is_array($routes_json)) {
                 $routes = json_decode($routes_json, true);
@@ -360,7 +399,7 @@ class AirTrafficEmulation
     public function addFlight($number, $data)
     {
         $insert = $this->jsonValidate($data);
-        print_r($insert);
+        // print_r($insert);
         $insert = json_encode($insert);
         $this->client->hset("routes", $number, $insert);
     }
@@ -380,34 +419,6 @@ class AirTrafficEmulation
         $this->client->disconnect();
     }
 
-
-    /**
-     * Initialize redis storage.
-     *
-     * @access private
-     *
-     * @param string  $host
-     * @param integer $port
-     *
-     * @uses Predis\Client to connect to redis
-     *
-     * @throws Predis\Connection\ConnectionException
-     * if the database is not connected
-     *
-     * @return void
-     */
-    private function redisConnect($host, $port)
-    {
-        try {
-            $this->client = new Client([
-                'scheme' => 'tcp',
-                'host'   => $host,
-                'port'   => $port,
-            ]);
-        } catch(Exception $e) {
-            die($e->getMessage());
-        }
-    }
 
     /**
      * Construct the class, initializes redis storage and JSON validator.

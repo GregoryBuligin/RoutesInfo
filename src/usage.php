@@ -27,23 +27,22 @@ JSON;
 
 
 // $json = json_decode($json, true);
-// print_r($insert);
-$r = new AirTrafficEmulation($json);
-try {
-    $r->addFlight("FV777", $insert);
-    $r->addFlight("FV555", $insert);
 
-    echo $r->partDistance("IV4673", 1) . PHP_EOL;
-    echo $r->distance("IV4673") . PHP_EOL;
-    echo $r->timeArrival("IV4673") . PHP_EOL;
-    echo $r->partTimeArrival("IV4673", 1) . PHP_EOL;
-    echo $r->partTimeArrival("FV555", 2) . PHP_EOL;
+$air_traffic_emul = new AirTrafficEmulation($json);
+try {
+    // $air_traffic_emul->redisConnect();
+    $air_traffic_emul->addFlight("FV777", $insert);
+    $air_traffic_emul->addFlight("FV555", $insert);
+
+    echo $air_traffic_emul->partDistance("IV4673", 1) . PHP_EOL;
+    echo $air_traffic_emul->distance("IV4673") . PHP_EOL;
+    echo $air_traffic_emul->timeArrival("IV4673") . PHP_EOL;
+    echo $air_traffic_emul->partTimeArrival("IV4673", 1) . PHP_EOL;
+    echo $air_traffic_emul->partTimeArrival("FV555", 2) . PHP_EOL;
     $date = \DateTime::createFromFormat(DATE_TIME_FORMAT, '2016-01-07 11:00');
-    // // echo 'date: ' . $date->format(DATE_TIME_FORMAT) . PHP_EOL;
-    print_r($r->inAir($date)) . PHP_EOL;
-    var_dump($r->inAir()) . PHP_EOL;
-//     // $r->redisConnect();
-//
+    // echo 'date: ' . $date->format(DATE_TIME_FORMAT) . PHP_EOL;
+    print_r($air_traffic_emul->inAir($date)) . PHP_EOL;
+    var_dump($air_traffic_emul->inAir()) . PHP_EOL;
 } catch(\BadMethodCallException $e) {
-    echo "Error" . '\n';
+    echo "Error" . PHP_EOL;
 }

@@ -1,19 +1,28 @@
 RoutesInfo
 =============
-####AirTrafficEmulation is a class for simulate the traffic of aircraft traffic. The class allows to simulate the traffic of aircraft traffic on predetermined trajectories. Flight information is specified using JSON.
-###Methods:
+#### AirTrafficEmulation is a class for simulate the traffic of aircraft traffic. The class allows to simulate the traffic of aircraft traffic on predetermined trajectories. Flight information is specified using JSON.
+-------------------
+### Methods:
+
+- AirTrafficEmulation(\$routes_json, \$host, \$port) -> Constructor.
+- redisConnect(\$host, \$port) -> Set Redis connection.
+- jsonParseAndAdd(\$routes_json) -> Parsing json string and add it to storage.
 - addFlight(\$fligth, \$insert) -> Adding new flights in RAM-storage.
 - distance(\$fligth) -> Calculate the total distance in km of the route.
 - timeArrival(\$fligth) -> Calculate the estimated time of arrival for the flight.
 - partTimeArrival(\$fligth, \$n) -> Calculates arrival time at the waypoint.
 - inAir(\$date) -> Gives a list of current aircraft that are already in flight, but have not yet reached the final point.
-### Example usage:
+
+-------------------
+### Example class usage:
 ```php
 <?php
 require_once "vendor/autoload.php";
 
 use RoutesInfo\Distance\AirTrafficEmulation;
 
+/** @const EARTH_RADIUS Earth radius for distance calculation */
+define('EARTH_RADIUS', 6372.795);
 /** @const DATE_TIME_FORMAT datatime format for print */
 define('DATE_TIME_FORMAT', 'Y-m-j H:i');
 
@@ -35,23 +44,74 @@ $insert = <<<'JSON'
 JSON;
 
 
-$r = new AirTrafficEmulation($json);
-try {
-    $r->addFlight("FV777", $insert);
-    $r->addFlight("FV555", $insert);
+// $json = json_decode($json, true);
 
-    echo $r->partDistance("IV4673", 1) . PHP_EOL;
-    echo $r->distance("IV4673") . PHP_EOL;
-    echo $r->timeArrival("IV4673") . PHP_EOL;
-    echo $r->partTimeArrival("IV4673", 1) . PHP_EOL;
-    echo $r->partTimeArrival("FV555", 2) . PHP_EOL;
+$air_traffic_emul = new AirTrafficEmulation($json);
+try {
+    // $air_traffic_emul->redisConnect();
+    $air_traffic_emul->addFlight("FV777", $insert);
+    $air_traffic_emul->addFlight("FV555", $insert);
+
+    echo $air_traffic_emul->partDistance("IV4673", 1) . PHP_EOL;
+    echo $air_traffic_emul->distance("IV4673") . PHP_EOL;
+    echo $air_traffic_emul->timeArrival("IV4673") . PHP_EOL;
+    echo $air_traffic_emul->partTimeArrival("IV4673", 1) . PHP_EOL;
+    echo $air_traffic_emul->partTimeArrival("FV555", 2) . PHP_EOL;
     $date = \DateTime::createFromFormat(DATE_TIME_FORMAT, '2016-01-07 11:00');
-    // // echo 'date: ' . $date->format(DATE_TIME_FORMAT) . PHP_EOL;
-    print_r($r->inAir($date)) . PHP_EOL;
-    var_dump($r->inAir()) . PHP_EOL;
-//     // $r->redisConnect();
-//
+    // echo 'date: ' . $date->format(DATE_TIME_FORMAT) . PHP_EOL;
+    print_r($air_traffic_emul->inAir($date)) . PHP_EOL;
+    var_dump($air_traffic_emul->inAir()) . PHP_EOL;
 } catch(\BadMethodCallException $e) {
-    echo "Error" . '\n';
+    echo "Error" . PHP_EOL;
 }
+
+```
+
+### Example cli usage:
+```sh
+$ src/routes_info-cli.php --help
+Usage: routes_info-cli [OPTIONS] [ARGS...]
+  -c <host:port>            Redis server hostname:port connection
+                            (default: 127.0.0.1:6379).
+  -j <json>                 Input data from file (default: null).
+  -d <flight>               Calculate the total distance in km of the route.
+  -t <flight>               Calculate the estimated time of arrival for the flight.
+  -p <flight:section>      Calculates arrival time at the waypoint.
+  -i <date>                 Gives a list of current aircraft that are already in flight,
+                            but have not yet reached the final point.
+  -h                        Output this help and exit.
+  --connection <host:port>  Redis server hostname:port connection
+                            (default: 127.0.0.1:6379).
+  --json                    Input data from file (default: null).
+  --distance <flight>       Calculate the total distance in km of the route.
+  --time-arrival <flight>   Calculate the estimated time of arrival for the flight.
+  --part-time-arrival <flight:section> Calculates arrival time at the waypoint.
+  --in-air <date:time>      Gives a list of current aircraft that are already in flight,
+                            but have not yet reached the final point.
+  --help                    Output this help and exit.
+
+  When no command is given, routes_info-cli starts in interactive mode.
+  Type "help" in interactive mode for information on available commands
+  and settings.
+
+```
+
+### Example interactive-cli usage:
+```sh
+$ src/routes_info-cli.php
+Start interactive session...
+ri-cli>>> help
+
+Commands available from the prompt:
+
+  connection (or c) <host> <port>  to Redis server hostname:port connection
+                                   (default: 127.0.0.1:6379).
+  json (or j) <path to .json file> to input data from file (default: null).
+  distance (or d) <flight>         to calculate the total distance in km of the route.
+  time-arrival (or t) <flight>     to calculate the estimated time of arrival for the flight.
+  part-time-arrival (or p) <flight> <section> to calculates arrival time at the waypoint.
+  in-air (or i) [<date> <time>]    to gives a list of current aircraft that are already in flight,
+                                   but have not yet reached the final point.
+  help (or h)                      to output this help.
+
 ```
