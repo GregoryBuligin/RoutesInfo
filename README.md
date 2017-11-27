@@ -5,16 +5,16 @@ RoutesInfo
 ### Methods:
 - **Public methods:**
 
-  - **AirTrafficEmulation(***\$routes_json, \$host, \$port***)** **->** Constructor.
-  - **redisConnect(***\$host, \$port***)** **->** Set Redis connection.
-  - **jsonParseAndAdd(***\$routes_json***)** **->** Parsing json string and add it to storage.
-  - **addFlight(***\$fligth, \$insert***)** **->** Adding new flights in RAM-storage.
-  - **distance(***\$fligth***)** **->** Calculate the total distance in km of the route.
-  - **timeArrival(***\$fligth***)** **->** Calculate the estimated time of arrival for the flight.
-  - **partTimeArrival(***\$fligth, \$n***)** **->** Calculates arrival time at the waypoint.
-  - **inAir(***\$date***)** **->** Gives a list of current aircraft that are already in flight, but have not yet reached the final point.
+  - **AirTrafficEmulation**(\$routes_json, \$host, \$port) **->** Constructor.
+  - **redisConnect**(\$host, \$port) **->** Set Redis connection.
+  - **jsonParseAndAdd**(\$routes_json) **->** Parsing json string and add it to storage.
+  - **addFlight**(\$fligth, \$insert) **->** Adding new flights in RAM-storage.
+  - **distance**(\$fligth) **->** Calculate the total distance in km of the route.
+  - **timeArrival**(\$fligth) **->** Calculate the estimated time of arrival for the flight.
+  - **partTimeArrival**(\$fligth, \$n) **->** Calculates arrival time at the waypoint.
+  - **inAir**(\$date) **->** Gives a list of current aircraft that are already in flight, but have not yet reached the final point.
 - **Static methods:**
-	- **AirTrafficEmulation::distanceCalculation(***\$point1, \$point2***)** **->** ***Static*** method for calculation of the distance from the coordinates of two points.
+	- **AirTrafficEmulation::distanceCalculation**(\$point1, \$point2) **->** ***Static*** method for calculation of the distance from the coordinates of two points.
 
 -------------------
 ### Example class usage:
@@ -112,7 +112,7 @@ Usage: routes_info-cli [OPTIONS] [ARGS...]
   -j <json>                 Input data from file (default: null).
   -d <flight>               Calculate the total distance in km of the route.
   -t <flight>               Calculate the estimated time of arrival for the flight.
-  -p <flight:section>      Calculates arrival time at the waypoint.
+  -p <flight:section>       Calculates arrival time at the waypoint.
   -i <date>                 Gives a list of current aircraft that are already in flight,
                             but have not yet reached the final point.
   -h                        Output this help and exit.
