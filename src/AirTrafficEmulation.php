@@ -1,6 +1,8 @@
 <?php
 namespace RoutesInfo\Distance;
 
+use RoutesInfo\TrafficInterface\TrafficEmulationInterface;
+
 use JsonSchema\Validator;
 use JsonSchema\Constraints\Constraint;
 
@@ -39,15 +41,11 @@ use Predis\Client;
  * echo $air_traffic_emul->partTimeArrival("FV777", 0) . PHP_EOL;
  * print_r($air_traffic_emul->inAir($date)) . PHP_EOL;
  *
- * Static method call.
- * $point1 = [33, 33]; // [lat, long]
- * $point2 = [37, 24]; // [lat, long]
- * echo AirTrafficEmulation::distanceCalculation($point1, $point2) . PHP_EOL;
  *
  * @package  RoutesInfo
  * @access   public
  */
-class AirTrafficEmulation
+class AirTrafficEmulation implements TrafficEmulationInterface
 {
     /** @const EARTH_RADIUS Earth radius for distance calculation */
     const EARTH_RADIUS = 6372.795;

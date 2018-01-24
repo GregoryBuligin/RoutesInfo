@@ -75,6 +75,10 @@ try {
     $point1 = [33, 33]; // [lat, long]
     $point2 = [37, 24]; // [lat, long]
     echo AirTrafficEmulation::distanceCalculation($point1, $point2) . PHP_EOL;
+    $point1 = [77.1539, 139.398]; // [lat, long]
+    $point2 = [-77.1804, 139.55]; // [lat, long]
+    echo AirTrafficEmulation::distanceCalculation($point1, $point2) . PHP_EOL;
+
 
 } catch(\BadMethodCallException $e) {
     echo "Error" . PHP_EOL;
